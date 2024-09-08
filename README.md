@@ -13,4 +13,4 @@ Cerber isn't streaming? Worry not, desktop Cerby will playfully run around your 
 - React to common leaving messages, eg
     - Goodnight variants sends minawan to sleep, icon fades
     - Goodbye variants makes a door appear which minawan leave through
-- Upload custom art to be synced across all users (maybe?)
+- Upload custom minawan to be synced across all users (maybe?)
