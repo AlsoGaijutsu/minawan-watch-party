@@ -16,7 +16,7 @@ use log::info;
 use rand::Rng;
 
 use crate::{
-    AppState, MessageBundle, MessageSpawnTime, TwitchMessage, UserAction, UserActionDetails,
+    AppState, MessageSpawnTime, TwitchMessage, UserAction, UserActionDetails,
     UserBundle, UserDetails, UserMarker, ACTION_DURATION, AVATAR_MOVE_SPEED, MESSAGE_DESPAWN_TIME,
     USER_DESPAWN_TIME, WAIT_DURATION,
 };
@@ -41,10 +41,10 @@ pub(crate) fn spawn_user(
                 name: twitch_message.user.clone(),
             },
             sprite: SpriteBundle {
-                texture: asset_server.load("https://cdn.7tv.app/emote/66bd095b0d8502f0629f69de/4x.webp"),
+                texture: asset_server.load("images/avatar.png"),
                 transform: Transform {
                     translation,
-                    scale: Vec3::new(0.5, 0.5, 0.5),
+                    scale: Vec3::new(2.0, 2.0, 2.0),
                     ..default()
                 },
                 ..default()

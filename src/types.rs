@@ -1,7 +1,7 @@
 use std::time::Instant;
 
 use bevy::{
-    prelude::{Bundle, Component, Entity, Resource},
+    prelude::{Bundle, Component, Entity, NodeBundle, Resource},
     sprite::{Sprite, SpriteBundle},
     text::Text2dBundle,
     utils::HashMap,
@@ -18,6 +18,12 @@ pub(crate) struct TwitchMessage {
 #[derive(Resource)]
 pub(crate) struct TwitchReceiver {
     pub(crate) receiver: mpsc::Receiver<TwitchMessage>,
+}
+
+/// Struct to store all 7tv emotes for a channel
+#[derive(Resource)]
+pub(crate) struct SevenTVEmotes{
+    pub(crate) emotes: HashMap<String, String>,
 }
 
 /// App State struct stored as a Resource
@@ -76,12 +82,4 @@ impl From<Instant> for MessageSpawnTime {
     fn from(time: Instant) -> Self {
         Self(time)
     }
-}
-
-// Bundle used to create a new message
-#[derive(Bundle)]
-pub(crate) struct MessageBundle {
-    pub(crate) text: Text2dBundle,
-    // pub(crate) background: Sprite,
-    pub(crate) time: MessageSpawnTime,
 }

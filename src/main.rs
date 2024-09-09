@@ -10,6 +10,7 @@ use bevy::{
 use bevy_web_asset::WebAssetPlugin;
 use env_logger::Env;
 use log::{debug, info};
+use seventv::get_seventv_emotes;
 use vleue_kinetoscope::AnimatedImagePlugin;
 use std::time::{Duration, Instant};
 use tokio::sync::mpsc;
@@ -26,7 +27,10 @@ use users::{despawn_users, move_users, spawn_user};
 mod messages;
 use messages::{despawn_messages, display_message};
 
-const CHANNEL: &str = "piratesoftware";
+mod seventv;
+
+const CHANNEL: &str = "ironmouse";
+const CHANNEL_ID: &str = "175831187";
 const ACTION_DURATION: Duration = Duration::from_millis(800);
 const WAIT_DURATION: Duration = Duration::from_secs(2);
 const AVATAR_MOVE_SPEED: f32 = 100.0; // pixels per second
@@ -59,6 +63,7 @@ async fn main() {
     App::new()
         .insert_resource(ClearColor(Color::NONE))
         .insert_resource(TwitchReceiver { receiver: rx })
+        .insert_resource(SevenTVEmotes { emotes: HashMap::new() })
         .insert_resource(AppState {
             active_users: HashMap::new(),
         })
@@ -69,7 +74,7 @@ async fn main() {
                     primary_window: Some(Window {
                         title: "Transparent Window".to_string(),
                         transparent: true,
-                        decorations: true,
+                        decorations: false,
                         present_mode: PresentMode::Mailbox,
                         window_level: bevy::window::WindowLevel::AlwaysOnTop,
                         ..default()
@@ -83,6 +88,7 @@ async fn main() {
         )
         .add_plugins(AnimatedImagePlugin)
         .add_systems(Startup, setup)
+        .add_systems(Startup, setup_seventv_emotes)
         .add_systems(Update, move_users)
         .add_systems(Update, despawn_users)
         .add_systems(Update, despawn_messages)
@@ -91,6 +97,28 @@ async fn main() {
         // .add_systems(Update, debug_camera)
         .run();
 }
+
+// Set up the camera and window
+fn setup(mut commands: Commands, mut windows: Query<&mut Window>, asset_server: Res<AssetServer>) {
+    commands.spawn(Camera2dBundle::default());
+    let mut window: Mut<'_, Window> = windows.single_mut();
+    window.cursor.hit_test = false;
+    window.set_maximized(true);
+    // commands.spawn(vleue_kinetoscope::AnimatedImageBundle {
+    //     animated_image: asset_server.load("https://cdn.7tv.app/emote/66bd095b0d8502f0629f69de/4x.webp"),
+    //     ..default()
+    // });
+}
+
+fn setup_seventv_emotes(mut emotes_rec: ResMut<SevenTVEmotes>) {
+    let rt = tokio::runtime::Runtime::new().unwrap();
+
+    let emotes = rt.block_on(async { 
+        get_seventv_emotes(CHANNEL_ID.to_string()).await 
+    });
+
+    emotes_rec.emotes = emotes;
+}    
 
 fn debug_position(query: Query<&GlobalTransform, With<UserMarker>>) {
     for transform in query.iter() {
@@ -124,22 +152,11 @@ async fn start_twitch_client(tx: mpsc::Sender<TwitchMessage>) {
     }
 }
 
-// Set up the camera and window
-fn setup(mut commands: Commands, mut windows: Query<&mut Window>, asset_server: Res<AssetServer>) {
-    commands.spawn(Camera2dBundle::default());
-    let mut window: Mut<'_, Window> = windows.single_mut();
-    // window.cursor.hit_test = false;
-    // window.set_maximized(true);
-    commands.spawn(vleue_kinetoscope::AnimatedImageBundle {
-        animated_image: asset_server.load("https://cdn.7tv.app/emote/66bd095b0d8502f0629f69de/4x.webp"),
-        ..default()
-    });
-}
-
 /// System to handle incoming Twitch messages
 fn handle_twitch_messages(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
+    emote_rec: Res<SevenTVEmotes>,
     query: Query<&Camera>,
     mut app_state: ResMut<AppState>,
     mut twitch_receiver: ResMut<TwitchReceiver>,
@@ -151,6 +168,7 @@ fn handle_twitch_messages(
             display_message(
                 &mut commands,
                 &asset_server,
+                &emote_rec,
                 user.entity,
                 &twitch_message.message,
             );
@@ -170,6 +188,7 @@ fn handle_twitch_messages(
             display_message(
                 &mut commands,
                 &asset_server,
+                &emote_rec,
                 entity,
                 &twitch_message.message,
             );
