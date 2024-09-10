@@ -1,12 +1,13 @@
 use std::time::Instant;
 
 use bevy::{
-    prelude::{Bundle, Component, Entity, NodeBundle, Resource},
-    sprite::{Sprite, SpriteBundle},
-    text::Text2dBundle,
+    prelude::{Bundle, Component, Entity, Resource},
+    sprite::SpriteBundle,
     utils::HashMap,
 };
 use tokio::sync::mpsc;
+
+use crate::emotes::emotetypes::Emote;
 
 /// Twitch message struct
 pub(crate) struct TwitchMessage {
@@ -23,7 +24,7 @@ pub(crate) struct TwitchReceiver {
 /// Struct to store all 7tv emotes for a channel
 #[derive(Resource)]
 pub(crate) struct SevenTVEmotes{
-    pub(crate) emotes: HashMap<String, String>,
+    pub(crate) emotes: HashMap<String, Emote>,
 }
 
 /// App State struct stored as a Resource
@@ -36,7 +37,7 @@ pub(crate) struct AppState {
 /// Struct to store User in App State
 pub(crate) struct User {
     pub(crate) entity: Entity,
-    pub(crate) name: String,
+    pub(crate) _name: String,
     pub(crate) last_message_time: Instant,
 }
 /// Marker component to identify user entities
@@ -46,7 +47,7 @@ pub(crate) struct UserMarker {}
 /// Component to store the user's Twitch details
 #[derive(Component)]
 pub(crate) struct UserDetails {
-    pub(crate) name: String,
+    pub(crate) _name: String,
 }
 
 /// Emum representing possible actions for a user
@@ -55,7 +56,7 @@ pub(crate) enum UserAction {
     MoveLeft,
     MoveRight,
     Stop,
-    Bark,
+    _Bark,
 }
 
 /// Bundle to store the user's last action and the time it was performed

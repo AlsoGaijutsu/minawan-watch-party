@@ -3,6 +3,10 @@ name = "minawan-watch-party"
 version = "0.1.0"
 edition = "2021"
 
+[toolchain]
+channel = "nightly"
+
+
 [dependencies]
 bevy = "0.14.1"
 bevy_web_asset = "0.9.0"
@@ -16,3 +20,4 @@ twitch-irc = "5.0.1"
 vleue_kinetoscope = "0.2.0"
 windows = { version = "0.58.0", features = ["Win32_Foundation", "Win32_Graphics_Gdi", "Win32_UI_WindowsAndMessaging"] }
 winit = "0.28.7"
+

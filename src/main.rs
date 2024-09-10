@@ -9,8 +9,9 @@ use bevy::{
 };
 use bevy_web_asset::WebAssetPlugin;
 use env_logger::Env;
+#[allow(unused_imports)]
 use log::{debug, info};
-use seventv::get_seventv_emotes;
+use emotes::{get_seventv_emotes, get_twitch_emotes};
 use vleue_kinetoscope::AnimatedImagePlugin;
 use std::time::{Duration, Instant};
 use tokio::sync::mpsc;
@@ -27,7 +28,7 @@ use users::{despawn_users, move_users, spawn_user};
 mod messages;
 use messages::{despawn_messages, display_message};
 
-mod seventv;
+mod emotes;
 
 const CHANNEL: &str = "ironmouse";
 const CHANNEL_ID: &str = "175831187";
@@ -89,6 +90,7 @@ async fn main() {
         .add_plugins(AnimatedImagePlugin)
         .add_systems(Startup, setup)
         .add_systems(Startup, setup_seventv_emotes)
+        .add_systems(Startup, setup_twitch_emotes)
         .add_systems(Update, move_users)
         .add_systems(Update, despawn_users)
         .add_systems(Update, despawn_messages)
@@ -99,9 +101,10 @@ async fn main() {
 }
 
 // Set up the camera and window
-fn setup(mut commands: Commands, mut windows: Query<&mut Window>, asset_server: Res<AssetServer>) {
+fn setup(mut commands: Commands, mut windows: Query<&mut Window>) {
     commands.spawn(Camera2dBundle::default());
     let mut window: Mut<'_, Window> = windows.single_mut();
+    window.resolution.set_scale_factor_override(Some(1.0));
     window.cursor.hit_test = false;
     window.set_maximized(true);
     // commands.spawn(vleue_kinetoscope::AnimatedImageBundle {
@@ -117,15 +120,27 @@ fn setup_seventv_emotes(mut emotes_rec: ResMut<SevenTVEmotes>) {
         get_seventv_emotes(CHANNEL_ID.to_string()).await 
     });
 
-    emotes_rec.emotes = emotes;
-}    
+    emotes_rec.emotes.extend(emotes);
+}
 
+fn setup_twitch_emotes(mut emotes_rec: ResMut<SevenTVEmotes>) {
+    let rt = tokio::runtime::Runtime::new().unwrap();
+
+    let emotes = rt.block_on(async { 
+        get_twitch_emotes(CHANNEL_ID.to_string()).await 
+    });
+
+    emotes_rec.emotes.extend(emotes);
+}
+
+#[allow(dead_code)]
 fn debug_position(query: Query<&GlobalTransform, With<UserMarker>>) {
     for transform in query.iter() {
         info!("Avatar position: {:?}", transform.translation());
     }
 }
 
+#[allow(dead_code)]
 fn debug_camera(query: Query<&Camera>) {
     let rect = query.single().logical_viewport_rect().unwrap();
     info!("Camera rect: {:?}", rect);
@@ -170,7 +185,7 @@ fn handle_twitch_messages(
                 &asset_server,
                 &emote_rec,
                 user.entity,
-                &twitch_message.message,
+                twitch_message.message,
             );
             user.last_message_time = Instant::now();
         } else {
@@ -181,7 +196,7 @@ fn handle_twitch_messages(
                 twitch_message.user.clone(),
                 User {
                     entity,
-                    name: twitch_message.user.clone(),
+                    _name: twitch_message.user.clone(),
                     last_message_time: Instant::now(),
                 },
             );
@@ -190,7 +205,7 @@ fn handle_twitch_messages(
                 &asset_server,
                 &emote_rec,
                 entity,
-                &twitch_message.message,
+                twitch_message.message,
             );
         }
     }

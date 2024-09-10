@@ -2,22 +2,20 @@ use std::time::Instant;
 
 use bevy::{
     asset::AssetServer,
-    color::Color,
-    math::{Rect, Vec2, Vec3},
+    math::{Rect, Vec3},
     prelude::{
-        default, BuildChildren, Camera, Commands, DespawnRecursiveExt, Entity, Query, Res, ResMut,
+        default, Camera, Commands, DespawnRecursiveExt, Entity, Query, Res, ResMut,
         Transform, With,
     },
-    sprite::{Anchor, Sprite, SpriteBundle},
-    text::{JustifyText, Text, Text2dBounds, Text2dBundle, TextStyle},
+    sprite::{Sprite, SpriteBundle},
     time::Time,
 };
 use log::info;
 use rand::Rng;
 
 use crate::{
-    AppState, MessageSpawnTime, TwitchMessage, UserAction, UserActionDetails,
-    UserBundle, UserDetails, UserMarker, ACTION_DURATION, AVATAR_MOVE_SPEED, MESSAGE_DESPAWN_TIME,
+    AppState, TwitchMessage, UserAction, UserActionDetails,
+    UserBundle, UserDetails, UserMarker, ACTION_DURATION, AVATAR_MOVE_SPEED,
     USER_DESPAWN_TIME, WAIT_DURATION,
 };
 
@@ -38,7 +36,7 @@ pub(crate) fn spawn_user(
         .spawn(UserBundle {
             marker: UserMarker {},
             details: UserDetails {
-                name: twitch_message.user.clone(),
+                _name: twitch_message.user.clone(),
             },
             sprite: SpriteBundle {
                 texture: asset_server.load("images/avatar.png"),
@@ -59,13 +57,13 @@ pub(crate) fn spawn_user(
 
 // Move avatars left and right randomly
 pub(crate) fn move_users(
-    mut user_query: Query<(&mut Transform, &mut UserActionDetails), With<UserMarker>>,
+    mut user_query: Query<(&mut Transform, &mut Sprite, &mut UserActionDetails), With<UserMarker>>,
     camera_query: Query<&Camera>,
     time: Res<Time>,
 ) {
     let mut rng = rand::thread_rng();
     let rect = camera_query.single().logical_viewport_rect().unwrap();
-    for (mut transform, mut action) in user_query.iter_mut() {
+    for (mut transform, mut sprite, mut action) in user_query.iter_mut() {
         let now = Instant::now();
         let delta = time.delta_seconds();
 
@@ -94,12 +92,14 @@ pub(crate) fn move_users(
         match action.last_action {
             UserAction::MoveLeft => {
                 transform.translation.x -= AVATAR_MOVE_SPEED * delta;
+                sprite.flip_x = true;
             }
             UserAction::MoveRight => {
                 transform.translation.x += AVATAR_MOVE_SPEED * delta;
+                sprite.flip_x = false;
             }
             UserAction::Stop => {}
-            UserAction::Bark => {}
+            UserAction::_Bark => {}
         }
     }
 }
