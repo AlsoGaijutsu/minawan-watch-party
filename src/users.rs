@@ -4,8 +4,7 @@ use bevy::{
     asset::AssetServer,
     math::{Rect, Vec3},
     prelude::{
-        default, Camera, Commands, DespawnRecursiveExt, Entity, Query, Res, ResMut,
-        Transform, With,
+        default, Camera, Commands, DespawnRecursiveExt, Entity, Query, Res, ResMut, Transform, With,
     },
     sprite::{Sprite, SpriteBundle},
     time::Time,
@@ -14,10 +13,11 @@ use log::info;
 use rand::Rng;
 
 use crate::{
-    AppState, TwitchMessage, UserAction, UserActionDetails,
-    UserBundle, UserDetails, UserMarker, ACTION_DURATION, AVATAR_MOVE_SPEED,
-    USER_DESPAWN_TIME, WAIT_DURATION,
+    AppState, TwitchMessage, UserAction, UserActionDetails, UserBundle, UserDetails, UserMarker,
+    ACTION_DURATION, AVATAR_MOVE_SPEED, USER_DESPAWN_TIME, WAIT_DURATION,
 };
+
+const EDGE_BUFFER: f32 = 20.0; // Buffer to prevent avatars from going off screen
 
 /// Spawn a new user entity in a random position
 pub(crate) fn spawn_user(
@@ -29,7 +29,7 @@ pub(crate) fn spawn_user(
     info!("New user: {}", twitch_message.user);
     let translation = Vec3::new(
         rand::thread_rng().gen_range((rect.max.x / -3.0)..(rect.max.x / 3.0)),
-        -(rect.max.y / 2.0) + 50.0,
+        -(rect.max.y / 2.0) + 25.0,
         0.0,
     );
     commands
@@ -40,11 +40,7 @@ pub(crate) fn spawn_user(
             },
             sprite: SpriteBundle {
                 texture: asset_server.load("images/avatar.png"),
-                transform: Transform {
-                    translation,
-                    scale: Vec3::new(2.0, 2.0, 2.0),
-                    ..default()
-                },
+                transform: Transform::from_translation(translation),
                 ..default()
             },
             last_action: UserActionDetails {
@@ -74,9 +70,9 @@ pub(crate) fn move_users(
         // Check if it's time to change the action
         if now.duration_since(action.time) > wait_duration {
             // Check if the user is close to the left edge
-            let close_to_left_edge = transform.translation.x <= (rect.max.x / -2.0) + 100.0;
+            let close_to_left_edge = transform.translation.x <= (rect.max.x / -2.0) + EDGE_BUFFER;
             // Check if the user is close to the right edge
-            let close_to_right_edge = transform.translation.x >= (rect.max.x / 2.0) - 100.0;
+            let close_to_right_edge = transform.translation.x >= (rect.max.x / 2.0) - EDGE_BUFFER;
 
             action.last_action = match rng.gen_range(0..3) {
                 0 if close_to_left_edge => UserAction::MoveRight,

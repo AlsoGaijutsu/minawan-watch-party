@@ -7,12 +7,13 @@ use bevy::{
 };
 use tokio::sync::mpsc;
 
-use crate::emotes::emotetypes::Emote;
+use crate::emotes::emote_types::{Emote, LoadedEmote};
 
 /// Twitch message struct
 pub(crate) struct TwitchMessage {
     pub(crate) user: String,
     pub(crate) message: String,
+    pub(crate) emotes: Vec<Emote>
 }
 
 // Wrap the mpsc::Receiver in a struct and derive Resource
@@ -21,23 +22,31 @@ pub(crate) struct TwitchReceiver {
     pub(crate) receiver: mpsc::Receiver<TwitchMessage>,
 }
 
-/// Struct to store all 7tv emotes for a channel
+/// Struct to store all emotes that have not been loaded yet
 #[derive(Resource)]
-pub(crate) struct SevenTVEmotes{
-    pub(crate) emotes: HashMap<String, Emote>,
+pub(crate) struct EmoteStorage {
+    pub(crate) all: HashMap<String, Emote>,
+    pub(crate) loaded: HashMap<String, LoadedEmote>,
 }
 
 /// App State struct stored as a Resource
 #[derive(Resource)]
 pub(crate) struct AppState {
-    // #[deref]
     pub(crate) active_users: HashMap<String, User>,
+    pub(crate) program_state: ProgramState,
+}
+
+#[derive(Resource, Debug)]
+pub(crate) enum ProgramState {
+    Loading,
+    Running,
 }
 
 /// Struct to store User in App State
 pub(crate) struct User {
     pub(crate) entity: Entity,
     pub(crate) _name: String,
+    pub(crate) last_message: Option<Entity>,
     pub(crate) last_message_time: Instant,
 }
 /// Marker component to identify user entities

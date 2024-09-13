@@ -8,9 +8,10 @@ Cerber isn't streaming? Worry not, desktop Cerby will playfully run around your 
 
 ## Roadmap:
 
-- Get minawan walking around above taskbar
-- Create 7tv style message bubbles with emotes inline with text
-- React to common leaving messages, eg
+[x] Get minawan walking around above taskbar
+[x] Create 7tv style message bubbles with emotes inline with text
+[ ] React to common leaving messages, eg
     - Goodnight variants sends minawan to sleep, icon fades
-    - Goodbye variants makes a door appear which minawan leave through
-- Upload custom minawan to be synced across all users (maybe?)
+    - Goodbye variants makes door appear which minawan leave through
+[ ] Support messages in discord
+[ ] Support uploading custom minawan
