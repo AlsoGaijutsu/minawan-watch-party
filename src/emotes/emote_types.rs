@@ -1,7 +1,4 @@
-use bevy::{
-    asset::Handle,
-    prelude::Image, render::texture::ImageFormat,
-};
+use bevy::{asset::Handle, prelude::Image, render::texture::ImageFormat};
 use serde::{Deserialize, Serialize};
 use vleue_kinetoscope::AnimatedImage;
 

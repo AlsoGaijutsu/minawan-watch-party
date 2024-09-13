@@ -13,7 +13,7 @@ use crate::emotes::emote_types::{Emote, LoadedEmote};
 pub(crate) struct TwitchMessage {
     pub(crate) user: String,
     pub(crate) message: String,
-    pub(crate) emotes: Vec<Emote>
+    pub(crate) emotes: Vec<Emote>,
 }
 
 // Wrap the mpsc::Receiver in a struct and derive Resource
@@ -46,7 +46,6 @@ pub(crate) enum ProgramState {
 pub(crate) struct User {
     pub(crate) entity: Entity,
     pub(crate) _name: String,
-    pub(crate) last_message: Option<Entity>,
     pub(crate) last_message_time: Instant,
 }
 /// Marker component to identify user entities

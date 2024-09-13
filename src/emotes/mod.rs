@@ -11,7 +11,6 @@ pub(crate) async fn get_seventv_emotes(channel_id: String) -> HashMap<String, Em
     let response = reqwest::get(format!("{}{}", SEVEN_TV_URL, channel_id)).await;
     if response.is_err() {
         panic!("Cannot get 7tv emotes");
-        return HashMap::new();
     }
 
     let response: SevenTVResponse = response.unwrap().json::<SevenTVResponse>().await.unwrap();
@@ -60,7 +59,8 @@ async fn get_image_meta(url: &str) -> EmoteMeta {
             };
         }
     };
-    let format = ImageFormat::from_image_crate_format(image_format).expect("Image format converted to Bevy format");
+    let format = ImageFormat::from_image_crate_format(image_format)
+        .expect("Image format converted to Bevy format");
 
     // debug!("Image format: {:?}", image_format);
     // debug!("Width: {}, Height: {}", dimensions.0, dimensions.1);
@@ -81,16 +81,16 @@ pub(crate) async fn update_emote_meta(emote: &mut Emote) {
     match meta.format {
         ImageFormat::Png => {
             emote.animated = false;
-        },
+        }
         ImageFormat::Gif => {
             emote.animated = true;
-        },
+        }
         ImageFormat::WebP => {
             emote.animated = true;
-        },
+        }
         _ => {
             warn!("Unsupported image format: {:?}", emote.format);
             emote.animated = false;
-        },
+        }
     }
 }

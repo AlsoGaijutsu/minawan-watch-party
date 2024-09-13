@@ -1,4 +1,4 @@
-use std::{io::Cursor, time::Instant};
+use std::time::Instant;
 
 use bevy::{
     asset::{AssetServer, Handle},
@@ -8,16 +8,16 @@ use bevy::{
         default, BuildChildren, Commands, DespawnRecursiveExt, Entity, Image, Query, Res, ResMut,
         Transform,
     },
-    render::texture::{ImageFormat, ImageFormatSetting, ImageLoaderSettings},
+    render::texture::{ImageFormatSetting, ImageLoaderSettings},
     sprite::{Anchor, Sprite, SpriteBundle},
-    text::{BreakLineOn, Font, JustifyText, Text, Text2dBounds, Text2dBundle, TextSection, TextStyle},
+    text::{
+        BreakLineOn, Font, JustifyText, Text, Text2dBounds, Text2dBundle, TextSection, TextStyle,
+    },
 };
-use image::ImageReader;
-use log::{debug, info, warn};
-use reqwest::{blocking::Client, header::RANGE};
+use log::{debug, info};
 use vleue_kinetoscope::{AnimatedImage, AnimatedImageBundle};
 
-use crate::{EmoteStorage, MessageSpawnTime, User, MESSAGE_DESPAWN_TIME};
+use crate::{EmoteStorage, MessageSpawnTime, MESSAGE_DESPAWN_TIME};
 
 const FONT_SIZE: f32 = 20.0;
 const EMOTE_SIZE_MULTIPLIER: f32 = 1.7; // Emotes scale to font height * this value
@@ -28,12 +28,11 @@ const FONT_WIDTH: f32 = FONT_HEIGHT * 0.70;
 const TOP_MARGIN: f32 = FONT_HEIGHT * 0.15;
 const LINE_SPACE: f32 = FONT_HEIGHT * 0.55;
 
-
 // System to display message above the avatar's head
 pub(crate) fn display_message(
     commands: &mut Commands,
     asset_server: &Res<AssetServer>,
-    emote_store: &mut ResMut<EmoteStorage>, 
+    emote_store: &mut ResMut<EmoteStorage>,
     entity: Entity,
     message: String,
 ) {
@@ -50,7 +49,8 @@ pub(crate) fn display_message(
     // debug!("Font height: {}", font_height);
     // debug!("Font width: {}", font_width);
 
-    let (text_sections, mut anim_emote_bundles, mut static_emote_bundles, lines, entries) = create_message_sections(asset_server, message, emote_store, font);
+    let (text_sections, mut anim_emote_bundles, mut static_emote_bundles, lines, entries) =
+        create_message_sections(asset_server, message, emote_store, font);
 
     // If there is only one emote, display it large above the avatar
     if entries == 1 {
@@ -76,7 +76,8 @@ pub(crate) fn display_message(
     box_size.y = (lines + 1.0) * (FONT_HEIGHT + LINE_SPACE) + TOP_MARGIN + 10.0;
     box_position.y += box_size.y;
 
-    commands.spawn(SpriteBundle {
+    commands
+        .spawn(SpriteBundle {
             sprite: Sprite {
                 color: Color::BLACK.with_alpha(0.4),
                 custom_size: Some(Vec2::new(box_size.x, box_size.y)),
@@ -112,18 +113,33 @@ pub(crate) fn display_message(
 }
 
 /// Calculate the transform for an emote based on the current line and line length
-fn calculate_emote_transform(line_length: f32, line_number: f32, spacing_width: f32, emote_norm: f32) -> Transform {
-    Transform::from_translation(
-        Vec3::new(
-            line_length - (FONT_WIDTH * spacing_width / 2.0),
-            -line_number * (FONT_HEIGHT + LINE_SPACE) - TOP_MARGIN - 0.5 * FONT_HEIGHT,
-            3.0,
-        ),
-    ).with_scale(Vec3::splat(emote_norm))
+fn calculate_emote_transform(
+    line_length: f32,
+    line_number: f32,
+    spacing_width: f32,
+    emote_norm: f32,
+) -> Transform {
+    Transform::from_translation(Vec3::new(
+        line_length - (FONT_WIDTH * spacing_width / 2.0),
+        -line_number * (FONT_HEIGHT + LINE_SPACE) - TOP_MARGIN - 0.5 * FONT_HEIGHT,
+        3.0,
+    ))
+    .with_scale(Vec3::splat(emote_norm))
 }
 
 /// Create the message sections and emote bundles by calculating the line breaks and emote positions
-fn create_message_sections(asset_server: &Res<AssetServer>, message: String, emote_store: &mut ResMut<EmoteStorage>, font: Handle<Font>) -> (Vec<TextSection>, Vec<AnimatedImageBundle>, Vec<SpriteBundle>, f32, i32) {
+fn create_message_sections(
+    asset_server: &Res<AssetServer>,
+    message: String,
+    emote_store: &mut ResMut<EmoteStorage>,
+    font: Handle<Font>,
+) -> (
+    Vec<TextSection>,
+    Vec<AnimatedImageBundle>,
+    Vec<SpriteBundle>,
+    f32,
+    i32,
+) {
     let mut text_sections: Vec<TextSection> = vec![];
     let mut anim_emote_bundles: Vec<AnimatedImageBundle> = vec![];
     let mut static_emote_bundles: Vec<SpriteBundle> = vec![];
@@ -137,7 +153,7 @@ fn create_message_sections(asset_server: &Res<AssetServer>, message: String, emo
         font_size: FONT_SIZE,
         color: Color::WHITE,
     };
-    
+
     let mut entries = 0;
     for word in message.split_whitespace() {
         entries += 1;
@@ -181,7 +197,12 @@ fn create_message_sections(asset_server: &Res<AssetServer>, message: String, emo
                     };
                     anim_emote_bundles.push(AnimatedImageBundle {
                         animated_image: handle,
-                        transform: calculate_emote_transform(line_length, line_number, spacing_width, emote_norm),
+                        transform: calculate_emote_transform(
+                            line_length,
+                            line_number,
+                            spacing_width,
+                            emote_norm,
+                        ),
                         sprite: Sprite {
                             color: Color::WHITE,
                             ..default()
@@ -200,7 +221,11 @@ fn create_message_sections(asset_server: &Res<AssetServer>, message: String, emo
                     } else {
                         handle = asset_server.load_with_settings::<Image, ImageLoaderSettings>(
                             &emote.emote_url,
-                            move |s: &mut ImageLoaderSettings| s.format = ImageFormatSetting::Format(emote.format.expect("Emote has format")),
+                            move |s: &mut ImageLoaderSettings| {
+                                s.format = ImageFormatSetting::Format(
+                                    emote.format.expect("Emote has format"),
+                                )
+                            },
                         );
                         emote_store
                             .loaded
@@ -208,7 +233,12 @@ fn create_message_sections(asset_server: &Res<AssetServer>, message: String, emo
                     };
                     static_emote_bundles.push(SpriteBundle {
                         texture: handle,
-                        transform: calculate_emote_transform(line_length, line_number, spacing_width, emote_norm),
+                        transform: calculate_emote_transform(
+                            line_length,
+                            line_number,
+                            spacing_width,
+                            emote_norm,
+                        ),
                         sprite: Sprite {
                             color: Color::WHITE,
                             ..default()
@@ -235,7 +265,13 @@ fn create_message_sections(asset_server: &Res<AssetServer>, message: String, emo
         text_sections.push(TextSection::new(line.clone(), text_style.clone()));
     };
 
-    (text_sections, anim_emote_bundles, static_emote_bundles, line_number, entries)
+    (
+        text_sections,
+        anim_emote_bundles,
+        static_emote_bundles,
+        line_number,
+        entries,
+    )
 }
 
 // System to handle despawning messages after a certain time
