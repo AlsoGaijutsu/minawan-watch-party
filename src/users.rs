@@ -13,17 +13,15 @@ use log::info;
 use rand::Rng;
 
 use crate::{
-    AppState, TwitchMessage, UserAction, UserActionDetails, UserBundle, UserDetails, UserMarker,
-    ACTION_DURATION, AVATAR_MOVE_SPEED, USER_DESPAWN_TIME, WAIT_DURATION,
+    config::Config, AppState, TwitchMessage, UserAction, UserActionDetails, UserBundle, UserDetails, UserMarker
 };
-
-const EDGE_BUFFER: f32 = 20.0; // Buffer to prevent avatars from going off screen
 
 /// Spawn a new user entity in a random position
 pub(crate) fn spawn_user(
     commands: &mut Commands,
     asset_server: &Res<AssetServer>,
     twitch_message: &TwitchMessage,
+    config: &Config,
     rect: Rect,
 ) -> Entity {
     info!("New user: {}", twitch_message.user);
@@ -39,7 +37,7 @@ pub(crate) fn spawn_user(
                 _name: twitch_message.user.clone(),
             },
             sprite: SpriteBundle {
-                texture: asset_server.load("images/avatar.png"),
+                texture: asset_server.load(&config.avatar_url),
                 transform: Transform::from_translation(translation),
                 ..default()
             },
@@ -56,6 +54,7 @@ pub(crate) fn move_users(
     mut user_query: Query<(&mut Transform, &mut Sprite, &mut UserActionDetails), With<UserMarker>>,
     camera_query: Query<&Camera>,
     time: Res<Time>,
+    config: Res<Config>,
 ) {
     let mut rng = rand::thread_rng();
     let rect = camera_query.single().logical_viewport_rect().unwrap();
@@ -64,15 +63,15 @@ pub(crate) fn move_users(
         let delta = time.delta_seconds();
 
         let wait_duration = match action.last_action {
-            UserAction::Stop => WAIT_DURATION,
-            _ => ACTION_DURATION,
+            UserAction::Stop => config.wait_duration,
+            _ => config.action_duration,
         };
         // Check if it's time to change the action
         if now.duration_since(action.time) > wait_duration {
             // Check if the user is close to the left edge
-            let close_to_left_edge = transform.translation.x <= (rect.max.x / -2.0) + EDGE_BUFFER;
+            let close_to_left_edge = transform.translation.x <= (rect.max.x / -2.0) + config.edge_buffer;
             // Check if the user is close to the right edge
-            let close_to_right_edge = transform.translation.x >= (rect.max.x / 2.0) - EDGE_BUFFER;
+            let close_to_right_edge = transform.translation.x >= (rect.max.x / 2.0) - config.edge_buffer;
 
             action.last_action = match rng.gen_range(0..3) {
                 0 if close_to_left_edge => UserAction::MoveRight,
@@ -87,11 +86,11 @@ pub(crate) fn move_users(
         // Perform the action
         match action.last_action {
             UserAction::MoveLeft => {
-                transform.translation.x -= AVATAR_MOVE_SPEED * delta;
+                transform.translation.x -= config.avatar_move_speed * delta;
                 sprite.flip_x = true;
             }
             UserAction::MoveRight => {
-                transform.translation.x += AVATAR_MOVE_SPEED * delta;
+                transform.translation.x += config.avatar_move_speed * delta;
                 sprite.flip_x = false;
             }
             UserAction::Stop => {}
@@ -101,10 +100,10 @@ pub(crate) fn move_users(
 }
 
 // Check if avatars need to despawn due to inactivity
-pub(crate) fn despawn_users(mut commands: Commands, mut app_state: ResMut<AppState>) {
+pub(crate) fn despawn_users(mut commands: Commands, mut app_state: ResMut<AppState>, config: Res<Config>) {
     let now = Instant::now();
     app_state.active_users.retain(|user_name, user| {
-        if now.duration_since(user.last_message_time) > USER_DESPAWN_TIME {
+        if now.duration_since(user.last_message_time) > config.user_despawn_time {
             info!("Despawning user: {}", user_name);
             commands.entity(user.entity).despawn_recursive();
             false

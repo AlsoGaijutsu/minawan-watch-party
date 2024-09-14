@@ -1,6 +1,5 @@
 #![windows_subsystem = "windows"]
 use bevy::{
-    // log::LogPlugin,
     prelude::*,
     render::{
         settings::{Backends, RenderCreation, WgpuSettings},
@@ -31,16 +30,20 @@ use messages::{despawn_messages, display_message};
 
 mod emotes;
 
-const CHANNEL: &str = "cerbervt";
-const CHANNEL_ID: &str = "852880224";
-const ACTION_DURATION: Duration = Duration::from_millis(800);
-const WAIT_DURATION: Duration = Duration::from_secs(2);
-const AVATAR_MOVE_SPEED: f32 = 100.0; // pixels per second
-const USER_DESPAWN_TIME: Duration = Duration::from_secs(1800); // 30 minutes in seconds
-const MESSAGE_DESPAWN_TIME: Duration = Duration::from_secs(10);
+mod config;
+use config::{Config, load_config};
 
-#[tokio::main] // We use Tokio's runtime since `twitch-irc` requires it
+#[tokio::main]
 async fn main() {
+    let config = load_config("config.ini");
+    let channel_id = config.channel_id.clone(); // TODO: Can I not double clone this?
+    let setup_with_channel_id = move |commands: Commands,
+                                 windows: Query<&mut Window>,
+                                 emotes_rec: ResMut<EmoteStorage>,
+                                 app_state: ResMut<AppState>| {
+        setup(commands, windows, emotes_rec, app_state, config.scale, channel_id.clone())
+    };
+
     let env = Env::default()
         .filter_or("LOG_LEVEL", "info")
         .write_style_or("LOG_STYLE", "always");
@@ -50,9 +53,10 @@ async fn main() {
     // Create a channel to communicate between Twitch client and Bevy
     let (tx, rx) = mpsc::channel::<TwitchMessage>(100);
 
+    let channel_name = config.channel_name.clone();
     // Start Twitch IRC client in a separate async task
     tokio::spawn(async move {
-        start_twitch_client(tx).await;
+        start_twitch_client(tx, channel_name).await;
     });
 
     // Set up Wgpu settings
@@ -63,6 +67,7 @@ async fn main() {
 
     // Run Bevy application
     App::new()
+        .insert_resource(config)
         .insert_resource(ClearColor(Color::NONE))
         .insert_resource(TwitchReceiver { receiver: rx })
         .insert_resource(EmoteStorage {
@@ -91,10 +96,9 @@ async fn main() {
                     render_creation: RenderCreation::Automatic(wgpu_settings),
                     synchronous_pipeline_compilation: false,
                 })
-                // .disable::<LogPlugin>(),
         )
         .add_plugins(AnimatedImagePlugin)
-        .add_systems(Startup, setup)
+        .add_systems(Startup, setup_with_channel_id)
         .add_systems(
             Update,
             (
@@ -113,33 +117,35 @@ fn setup(
     mut windows: Query<&mut Window>,
     mut emotes_rec: ResMut<EmoteStorage>,
     mut app_state: ResMut<AppState>,
+    scale_factor: f32,
+    channel_id: String
 ) {
     commands.spawn(Camera2dBundle::default());
     let mut window: Mut<'_, Window> = windows.single_mut();
-    window.resolution.set_scale_factor_override(Some(1.0));
+    window.resolution.set_scale_factor_override(Some(scale_factor));
     window.cursor.hit_test = false;
     window.set_maximized(true);
 
-    setup_seventv_emotes(&mut emotes_rec);
+    setup_seventv_emotes(&mut emotes_rec, channel_id);
 
     app_state.program_state = ProgramState::Running;
 }
 
-fn setup_seventv_emotes(emotes_rec: &mut ResMut<EmoteStorage>) {
+fn setup_seventv_emotes(emotes_rec: &mut ResMut<EmoteStorage>, channel_id: String) {
     let rt = tokio::runtime::Runtime::new().unwrap();
 
-    let emotes = rt.block_on(async { get_seventv_emotes(CHANNEL_ID.to_string()).await });
+    let emotes = rt.block_on(async { get_seventv_emotes(channel_id).await });
 
     emotes_rec.all.extend(emotes);
 }
 
-async fn start_twitch_client(tx: mpsc::Sender<TwitchMessage>) {
+async fn start_twitch_client(tx: mpsc::Sender<TwitchMessage>, channel: String) {
     let config = ClientConfig::new_simple(StaticLoginCredentials::anonymous());
 
     let (mut incoming_messages, client) =
         TwitchIRCClient::<SecureTCPTransport, StaticLoginCredentials>::new(config);
 
-    client.join(CHANNEL.to_string()).unwrap();
+    client.join(channel).unwrap();
 
     sleep(Duration::from_millis(2000)).await;
 
@@ -179,6 +185,7 @@ fn handle_twitch_messages(
     mut emote_rec: ResMut<EmoteStorage>,
     query: Query<&Camera>,
     mut app_state: ResMut<AppState>,
+    config: Res<Config>,
     mut twitch_receiver: ResMut<TwitchReceiver>,
 ) {
     while let Ok(twitch_message) = twitch_receiver.receiver.try_recv() {
@@ -196,6 +203,7 @@ fn handle_twitch_messages(
                 &mut commands,
                 &asset_server,
                 &mut emote_rec,
+                &config,
                 user.entity,
                 twitch_message.message,
             );
@@ -204,11 +212,12 @@ fn handle_twitch_messages(
         } else {
             // Add new user and spawn their avatar
             let rect = query.single().logical_viewport_rect().unwrap();
-            let entity = spawn_user(&mut commands, &asset_server, &twitch_message, rect);
+            let entity = spawn_user(&mut commands, &asset_server, &twitch_message, &config, rect);
             display_message(
                 &mut commands,
                 &asset_server,
                 &mut emote_rec,
+                &config,
                 entity,
                 twitch_message.message,
             );

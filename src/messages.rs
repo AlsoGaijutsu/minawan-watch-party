@@ -11,40 +11,32 @@ use bevy::{
 use log::{debug, info};
 use vleue_kinetoscope::{AnimatedImage, AnimatedImageBundle};
 
-use crate::{EmoteStorage, MessageSpawnTime, MESSAGE_DESPAWN_TIME};
-
-const FONT_SIZE: f32 = 20.0;
-const EMOTE_SIZE_MULTIPLIER: f32 = 1.7; // Emotes scale to font height * this value
-const MESSAGE_BOX_VERTICAL_OFFSET: f32 = 35.0;
-const MESSAGE_BOX_WIDTH: f32 = 200.0;
-const FONT_HEIGHT: f32 = FONT_SIZE * 0.7;
-const FONT_WIDTH: f32 = FONT_HEIGHT * 0.67;
-const TOP_MARGIN: f32 = FONT_HEIGHT * 0.15;
-const LINE_SPACE: f32 = FONT_HEIGHT * 0.43;
+use crate::{config::Config, EmoteStorage, MessageSpawnTime};
 
 // System to display message above the avatar's head
 pub(crate) fn display_message(
     commands: &mut Commands,
     asset_server: &Res<AssetServer>,
     emote_store: &mut ResMut<EmoteStorage>,
+    config: &Res<Config>,
     entity: Entity,
     message: String,
 ) {
     info!("Displaying message: {}", message);
 
     // Font MUST be monospace or the emotes will not align correctly
-    let font = asset_server.load("fonts/ComicMono.ttf");
+    let font = asset_server.load(&config.font_url);
 
     // Configure the message box
-    let mut box_size = Vec2::new(MESSAGE_BOX_WIDTH, 50.0);
-    let mut box_position = Vec2::new(box_size.x * -0.5, MESSAGE_BOX_VERTICAL_OFFSET);
+    let mut box_size = Vec2::new(config.message_box_width, 50.0);
+    let mut box_position = Vec2::new(box_size.x * -0.5, config.message_box_vertical_offset);
 
     // debug!("Font size: {}", FONT_SIZE);
     // debug!("Font height: {}", font_height);
     // debug!("Font width: {}", font_width);
 
     let (text_sections, mut anim_emote_bundles, mut static_emote_bundles, lines, entries) =
-        create_message_sections(asset_server, message, emote_store, font);
+        create_message_sections(asset_server, message, emote_store, font, config);
 
     // If there is only one emote, display it large above the avatar
     if entries == 1 {
@@ -67,7 +59,7 @@ pub(crate) fn display_message(
         }
     }
 
-    box_size.y = (lines + 1.0) * (FONT_HEIGHT + LINE_SPACE) + TOP_MARGIN + 10.0;
+    box_size.y = (lines + 1.0) * (config.font_height() + config.line_space()) + config.top_margin() + 10.0;
     box_position.y += box_size.y;
 
     commands
@@ -112,10 +104,11 @@ fn calculate_emote_transform(
     line_number: f32,
     spacing_width: f32,
     emote_norm: f32,
+    config: &Config,
 ) -> Transform {
     Transform::from_translation(Vec3::new(
-        line_length - (FONT_WIDTH * spacing_width / 2.0),
-        -line_number * (FONT_HEIGHT + LINE_SPACE) - TOP_MARGIN - 0.5 * FONT_HEIGHT,
+        line_length - (config.font_width() * spacing_width / 2.0),
+        -line_number * (config.font_height() + config.line_space()) - config.top_margin() - 0.5 * config.font_height(),
         3.0,
     ))
     .with_scale(Vec3::splat(emote_norm))
@@ -127,6 +120,7 @@ fn create_message_sections(
     message: String,
     emote_store: &mut ResMut<EmoteStorage>,
     font: Handle<Font>,
+    config: &Config,
 ) -> (
     Vec<TextSection>,
     Vec<AnimatedImageBundle>,
@@ -144,7 +138,7 @@ fn create_message_sections(
 
     let text_style = TextStyle {
         font,
-        font_size: FONT_SIZE,
+        font_size: config.font_size,
         color: Color::WHITE,
     };
 
@@ -153,9 +147,9 @@ fn create_message_sections(
         entries += 1;
         if let Some(emote) = emote_store.all.get(word).cloned() {
             // Get the emote normalisation factor
-            let emote_norm = FONT_HEIGHT * EMOTE_SIZE_MULTIPLIER / emote.height.unwrap_or(0) as f32;
+            let emote_norm = config.font_height() * config.emote_size_multiplier / emote.height.unwrap_or(0) as f32;
 
-            let spacing_width = (emote.width.unwrap_or(0) as f32 * emote_norm / FONT_WIDTH).ceil();
+            let spacing_width = (emote.width.unwrap_or(0) as f32 * emote_norm / config.font_width()).ceil();
             // info!("Emote: {} Scale: {}", emote.name, emote_norm);
             // info!("Width {:?} Height {:?}", emote.width, emote.height);
             // info!("Spacing width: {}", spacing_width);
@@ -164,16 +158,16 @@ fn create_message_sections(
             let spacing = &(" ".repeat(spacing_width as usize - 1) + " "); // Must be a non-breaking space (U+00A0)
 
             // Check if the emote fits on the current line
-            if (line_length + (FONT_WIDTH * (spacing_width - 1.0))) > MESSAGE_BOX_WIDTH {
+            if (line_length + (config.font_width() * (spacing_width - 1.0))) > config.message_box_width {
                 text_sections.push(TextSection::new(line.clone(), text_style.clone()));
-                warn!("Section: {:?}| Length: {}", line, line_length);
+                debug!("Section: {:?}| Length: {}", line, line_length);
                 line = "".to_string();
                 line_length = 0.0;
                 line_number += 1.0;
             }
 
             line += spacing;
-            line_length += spacing_width * FONT_WIDTH;
+            line_length += spacing_width * config.font_width();
 
             match emote.animated {
                 true => {
@@ -197,6 +191,7 @@ fn create_message_sections(
                             line_number,
                             spacing_width,
                             emote_norm,
+                            config
                         ),
                         sprite: Sprite {
                             color: Color::WHITE,
@@ -233,6 +228,7 @@ fn create_message_sections(
                             line_number,
                             spacing_width,
                             emote_norm,
+                            config
                         ),
                         sprite: Sprite {
                             color: Color::WHITE,
@@ -244,22 +240,22 @@ fn create_message_sections(
             }
         } else {
             // Check if the word fits on the current line
-            if (line_length + ((word.len() as f32 + 1.0) * FONT_WIDTH)) > MESSAGE_BOX_WIDTH {
+            if (line_length + ((word.len() as f32 + 1.0) * config.font_width())) > config.message_box_width {
                 text_sections.push(TextSection::new(line.clone(), text_style.clone()));
-                warn!("Section: {:?} Length: {}", line, line_length);
+                debug!("Section: {:?} Length: {}", line, line_length);
                 line = "".to_string();
                 line_length = 0.0;
                 line_number += 1.0;
             }
             line += &format!("{} ", word);
-            line_length += (word.len() as f32 + 1.0) * FONT_WIDTH;
+            line_length += (word.len() as f32 + 1.0) * config.font_width();
         }
     }
 
     if !line.is_empty() {
         text_sections.push(TextSection::new(line.clone(), text_style.clone()));
     };
-    warn!("Section: {:?}| Length: {}", line, line_length);
+    debug!("Section: {:?}| Length: {}", line, line_length);
 
     (
         text_sections,
@@ -271,10 +267,10 @@ fn create_message_sections(
 }
 
 // System to handle despawning messages after a certain time
-pub(crate) fn despawn_messages(mut commands: Commands, query: Query<(Entity, &MessageSpawnTime)>) {
+pub(crate) fn despawn_messages(mut commands: Commands, query: Query<(Entity, &MessageSpawnTime)>, config: Res<Config>) {
     let now = Instant::now();
     for (entity, spawn_time) in query.iter() {
-        if now.duration_since(spawn_time.0) > MESSAGE_DESPAWN_TIME {
+        if now.duration_since(spawn_time.0) > config.message_despawn_time {
             commands.entity(entity).despawn_recursive();
         }
     }

@@ -8,12 +8,11 @@ bevy = "0.14.1"
 bevy_web_asset = "0.9.0"
 env_logger = "0.11.5"
 image = "0.25.2"
-lazy_static = "1.5.0"
 log = "0.4.22"
 rand = "0.8.5"
 reqwest = {version = "0.12.7", features = ["json", "blocking"]}
+rust-ini = "0.21.1"
 serde = { version = "1.0.210", features = ["derive"] }
-thiserror = "1.0.63"
 tokio = { version = "1.40.0", features = ["full"] }
 twitch-irc = "5.0.1"
 vleue_kinetoscope = { git = "https://github.com/Gaijutsu/vleue_kinetoscope.git" }
