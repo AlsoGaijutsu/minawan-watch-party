@@ -1,6 +1,6 @@
 #![windows_subsystem = "windows"]
 use bevy::{
-    log::LogPlugin,
+    // log::LogPlugin,
     prelude::*,
     render::{
         settings::{Backends, RenderCreation, WgpuSettings},
@@ -18,6 +18,7 @@ use twitch_irc::{
     login::StaticLoginCredentials, ClientConfig, SecureTCPTransport, TwitchIRCClient,
 };
 use vleue_kinetoscope::AnimatedImagePlugin;
+use env_logger::Env;
 
 mod types;
 use types::*;
@@ -40,6 +41,12 @@ const MESSAGE_DESPAWN_TIME: Duration = Duration::from_secs(10);
 
 #[tokio::main] // We use Tokio's runtime since `twitch-irc` requires it
 async fn main() {
+    let env = Env::default()
+        .filter_or("LOG_LEVEL", "info")
+        .write_style_or("LOG_STYLE", "always");
+
+    env_logger::init_from_env(env);
+
     // Create a channel to communicate between Twitch client and Bevy
     let (tx, rx) = mpsc::channel::<TwitchMessage>(100);
 
@@ -84,7 +91,7 @@ async fn main() {
                     render_creation: RenderCreation::Automatic(wgpu_settings),
                     synchronous_pipeline_compilation: false,
                 })
-                .disable::<LogPlugin>(),
+                // .disable::<LogPlugin>(),
         )
         .add_plugins(AnimatedImagePlugin)
         .add_systems(Startup, setup)

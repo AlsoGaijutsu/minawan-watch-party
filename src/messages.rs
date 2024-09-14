@@ -1,18 +1,12 @@
 use std::time::Instant;
 
 use bevy::{
-    asset::{AssetServer, Handle},
-    color::{Alpha, Color},
-    math::{Vec2, Vec3},
-    prelude::{
+    asset::{AssetServer, Handle}, color::{Alpha, Color}, log::warn, math::{Vec2, Vec3}, prelude::{
         default, BuildChildren, Commands, DespawnRecursiveExt, Entity, Image, Query, Res, ResMut,
         Transform,
-    },
-    render::texture::{ImageFormatSetting, ImageLoaderSettings},
-    sprite::{Anchor, Sprite, SpriteBundle},
-    text::{
+    }, render::texture::{ImageFormatSetting, ImageLoaderSettings}, sprite::{Anchor, Sprite, SpriteBundle}, text::{
         BreakLineOn, Font, JustifyText, Text, Text2dBounds, Text2dBundle, TextSection, TextStyle,
-    },
+    }
 };
 use log::{debug, info};
 use vleue_kinetoscope::{AnimatedImage, AnimatedImageBundle};
@@ -24,9 +18,9 @@ const EMOTE_SIZE_MULTIPLIER: f32 = 1.7; // Emotes scale to font height * this va
 const MESSAGE_BOX_VERTICAL_OFFSET: f32 = 35.0;
 const MESSAGE_BOX_WIDTH: f32 = 200.0;
 const FONT_HEIGHT: f32 = FONT_SIZE * 0.7;
-const FONT_WIDTH: f32 = FONT_HEIGHT * 0.70;
+const FONT_WIDTH: f32 = FONT_HEIGHT * 0.67;
 const TOP_MARGIN: f32 = FONT_HEIGHT * 0.15;
-const LINE_SPACE: f32 = FONT_HEIGHT * 0.55;
+const LINE_SPACE: f32 = FONT_HEIGHT * 0.43;
 
 // System to display message above the avatar's head
 pub(crate) fn display_message(
@@ -39,7 +33,7 @@ pub(crate) fn display_message(
     info!("Displaying message: {}", message);
 
     // Font MUST be monospace or the emotes will not align correctly
-    let font = asset_server.load("fonts/Unifontexmono-DYWdE.ttf");
+    let font = asset_server.load("fonts/ComicMono.ttf");
 
     // Configure the message box
     let mut box_size = Vec2::new(MESSAGE_BOX_WIDTH, 50.0);
@@ -158,27 +152,28 @@ fn create_message_sections(
     for word in message.split_whitespace() {
         entries += 1;
         if let Some(emote) = emote_store.all.get(word).cloned() {
+            // Get the emote normalisation factor
+            let emote_norm = FONT_HEIGHT * EMOTE_SIZE_MULTIPLIER / emote.height.unwrap_or(0) as f32;
+
+            let spacing_width = (emote.width.unwrap_or(0) as f32 * emote_norm / FONT_WIDTH).ceil();
+            // info!("Emote: {} Scale: {}", emote.name, emote_norm);
+            // info!("Width {:?} Height {:?}", emote.width, emote.height);
+            // info!("Spacing width: {}", spacing_width);
+
+            // Calculate space for the emote
+            let spacing = &(" ".repeat(spacing_width as usize - 1) + " "); // Must be a non-breaking space (U+00A0)
+
             // Check if the emote fits on the current line
-            if (line_length + (3.0 * FONT_WIDTH)) > MESSAGE_BOX_WIDTH {
+            if (line_length + (FONT_WIDTH * (spacing_width - 1.0))) > MESSAGE_BOX_WIDTH {
                 text_sections.push(TextSection::new(line.clone(), text_style.clone()));
-                debug!("Line: {} Length: {}", line, line_length);
+                warn!("Section: {:?}| Length: {}", line, line_length);
                 line = "".to_string();
                 line_length = 0.0;
                 line_number += 1.0;
             }
 
-            // Get the emote normalisation factor
-            let emote_norm = FONT_HEIGHT * EMOTE_SIZE_MULTIPLIER / emote.height.unwrap_or(0) as f32;
-
-            // Add a space for the emote
-            let spacing_width = (emote.width.unwrap_or(0) as f32 * emote_norm / FONT_WIDTH).ceil();
-            let spacing = &" ".repeat(spacing_width as usize); // Must be a non-breaking space (U+00A0)
             line += spacing;
             line_length += spacing_width * FONT_WIDTH;
-
-            // println!("Emote: {} Scale: {}", emote.name, emote_norm);
-            // println!("Width {:?} Height {:?}", emote.width, emote.height);
-            // println!("Spacing width: {}", spacing_width);
 
             match emote.animated {
                 true => {
@@ -249,9 +244,9 @@ fn create_message_sections(
             }
         } else {
             // Check if the word fits on the current line
-            if (line_length + (word.len() as f32 * FONT_WIDTH)) > MESSAGE_BOX_WIDTH {
+            if (line_length + ((word.len() as f32 + 1.0) * FONT_WIDTH)) > MESSAGE_BOX_WIDTH {
                 text_sections.push(TextSection::new(line.clone(), text_style.clone()));
-                debug!("Line: {} Length: {}", line, line_length);
+                warn!("Section: {:?} Length: {}", line, line_length);
                 line = "".to_string();
                 line_length = 0.0;
                 line_number += 1.0;
@@ -264,6 +259,7 @@ fn create_message_sections(
     if !line.is_empty() {
         text_sections.push(TextSection::new(line.clone(), text_style.clone()));
     };
+    warn!("Section: {:?}| Length: {}", line, line_length);
 
     (
         text_sections,
