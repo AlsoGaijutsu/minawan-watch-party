@@ -2,11 +2,10 @@
 use bevy::{
     prelude::*,
     render::{
-        settings::{Backends, RenderCreation, WgpuSettings},
-        RenderPlugin,
+        settings::{Backends, RenderCreation, WgpuSettings}, RenderPlugin
     },
     utils::HashMap,
-    window::PresentMode,
+    window::{PresentMode, WindowFocused, WindowResized},
 };
 use bevy_web_asset::WebAssetPlugin;
 use emotes::{get_seventv_emotes, update_emote_meta};
@@ -77,6 +76,7 @@ async fn main() {
         .insert_resource(AppState {
             active_users: HashMap::new(),
             program_state: ProgramState::Loading,
+            resize_needed: false,
         })
         .add_plugins(WebAssetPlugin)
         .add_plugins(
@@ -106,6 +106,7 @@ async fn main() {
                 despawn_users,
                 despawn_messages,
                 handle_twitch_messages,
+                handle_window_events,
             ),
         )
         .run();
@@ -229,6 +230,42 @@ fn handle_twitch_messages(
                     last_message_time: Instant::now(),
                 },
             );
+        }
+    }
+}
+
+fn window_moved_system(
+    window_moved_events: EventReader<WindowMoved>,
+    mut app_state: ResMut<AppState>
+) {
+    if !window_moved_events.is_empty() {
+        app_state.resize_needed = true;
+    }
+}
+
+fn handle_window_events(
+    mut window_moved_events: EventReader<WindowMoved>,
+    mut window_resized_events: EventReader<WindowResized>,
+    mut window_focused_events: EventReader<WindowFocused>,
+    mut windows: Query<&mut Window>,
+    mut avatar_query: Query<&mut Transform, With<UserMarker>>,
+) {
+    // Check if any relevant window events have occurred
+    if !window_moved_events.is_empty()
+        || !window_resized_events.is_empty()
+        || !window_focused_events.is_empty()
+    {
+        // Get the primary window
+        if let Ok(window) = windows.get_single() {
+            let rect = window.physical_size();
+            for mut transform in avatar_query.iter_mut() {
+                transform.translation.x = transform
+                    .translation
+                    .x
+                    .max(-(rect.x as f32 / 2.0))
+                    .min(rect.x as f32 / 2.0);
+                transform.translation.y = -(rect.y as f32 / 2.0) + 25.0;
+            }
         }
     }
 }
