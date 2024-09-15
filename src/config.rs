@@ -9,6 +9,7 @@ pub(crate) struct Config {
     pub(crate) channel_id: String,
     pub(crate) scale: f32,
     pub(crate) avatar_url: String,
+    pub(crate) random_avatars: bool,
     pub(crate) action_duration: Duration,
     pub(crate) wait_duration: Duration,
     pub(crate) avatar_move_speed: f32,
@@ -78,6 +79,12 @@ pub(crate) fn load_config(filename: &str) -> Config {
         .get("AVATAR_URL")
         .expect("Missing AVATAR_URL")
         .to_string();
+
+    let random_avatars = avatars_section
+        .get("RANDOM_AVATARS")
+        .expect("Missing RANDOM_AVATARS")
+        .parse::<bool>()
+        .expect("Invalid RANDOM_AVATARS");
 
     let action_duration = Duration::from_millis(
         avatars_section
@@ -160,6 +167,7 @@ pub(crate) fn load_config(filename: &str) -> Config {
         channel_id,
         scale,
         avatar_url,
+        random_avatars,
         action_duration,
         wait_duration,
         avatar_move_speed,

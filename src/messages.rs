@@ -155,7 +155,7 @@ fn create_message_sections(
             // info!("Spacing width: {}", spacing_width);
 
             // Calculate space for the emote
-            let spacing = &(" ".repeat(spacing_width as usize - 1) + " "); // Must be a non-breaking space (U+00A0)
+            let spacing = &(" ".repeat((spacing_width as usize).saturating_sub(1)) + " "); // Must be a non-breaking space (U+00A0)
 
             // Check if the emote fits on the current line
             if (line_length + (config.font_width() * (spacing_width - 1.0))) > config.message_box_width {
