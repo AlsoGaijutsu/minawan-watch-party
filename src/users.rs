@@ -2,7 +2,7 @@ use std::time::Instant;
 
 use bevy::{
     asset::AssetServer,
-    math::{Rect, Vec3},
+    math::{Rect, Vec2, Vec3},
     prelude::{
         default, Camera, Commands, DespawnRecursiveExt, Entity, Query, Res, ResMut, Transform, With,
     },
@@ -30,6 +30,18 @@ pub(crate) fn spawn_user(
         -(rect.max.y / 2.0) + 25.0,
         0.0,
     );
+    // If config.random_avatars is true, then look for a random file in ./assets/avatars using os
+    // Otherwise, use the same avatar for all users
+    let avatar_url = if config.random_avatars {
+        let avatar_files = std::fs::read_dir("assets/avatars").unwrap();
+        let avatar_files: Vec<String> = avatar_files
+            .map(|entry| entry.unwrap().file_name().into_string().unwrap())
+            .collect();
+        let random_avatar = rand::thread_rng().gen_range(0..avatar_files.len());
+        format!("avatars/{}", avatar_files[random_avatar])
+    } else {
+        config.avatar_url.clone()
+    };
     commands
         .spawn(UserBundle {
             marker: UserMarker {},
@@ -37,7 +49,7 @@ pub(crate) fn spawn_user(
                 _name: twitch_message.user.clone(),
             },
             sprite: SpriteBundle {
-                texture: asset_server.load(&config.avatar_url),
+                texture: asset_server.load(&avatar_url),
                 transform: Transform::from_translation(translation),
                 ..default()
             },

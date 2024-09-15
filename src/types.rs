@@ -34,7 +34,6 @@ pub(crate) struct EmoteStorage {
 pub(crate) struct AppState {
     pub(crate) active_users: HashMap<String, User>,
     pub(crate) program_state: ProgramState,
-    pub(crate) resize_needed: bool,
 }
 
 #[derive(Resource, Debug)]

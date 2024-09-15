@@ -76,7 +76,6 @@ async fn main() {
         .insert_resource(AppState {
             active_users: HashMap::new(),
             program_state: ProgramState::Loading,
-            resize_needed: false,
         })
         .add_plugins(WebAssetPlugin)
         .add_plugins(
