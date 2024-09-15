@@ -4,8 +4,6 @@ Chill with all the minawan while you watch cerber's streams! Watch everyone walk
 Want to personalise yourself? Draw a custom minawan and submit it so everyone can see you walk around!
 Want to chill in the discord? Choose a channel and see minawan chatting on your taskbar!
 
-Cerber isn't streaming? Worry not, desktop Cerby will playfully run around your screen and mess with everything on it!
-
 ## Roadmap
 
 - [x] Get minawan walking around above taskbar
