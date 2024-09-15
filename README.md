@@ -4,6 +4,11 @@ Chill with all the minawan while you watch cerber's streams! Watch everyone walk
 Want to personalise yourself? Draw a custom minawan and submit it so everyone can see you walk around!
 Want to chill in the discord? Choose a channel and see minawan chatting on your taskbar!
 
+## Instructions
+
+The program works out of the box with no configuration. Simply run the exe and use `win + shift + arrow` to move the overlay to the correct window.
+See [Configuration] for details on how to use the .ini if you want to change monitored stream, font, etc
+
 ## Roadmap
 
 - [x] Get minawan walking around above taskbar

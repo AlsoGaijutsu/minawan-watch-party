@@ -234,15 +234,6 @@ fn handle_twitch_messages(
     }
 }
 
-fn window_moved_system(
-    window_moved_events: EventReader<WindowMoved>,
-    mut app_state: ResMut<AppState>
-) {
-    if !window_moved_events.is_empty() {
-        app_state.resize_needed = true;
-    }
-}
-
 fn handle_window_events(
     window_moved_events: EventReader<WindowMoved>,
     window_resized_events: EventReader<WindowResized>,
