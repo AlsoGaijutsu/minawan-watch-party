@@ -34,6 +34,7 @@ Configuration is done through editing config.ini. Most of the time you should on
 
 #### [Avatars]
 - AVATAR_URL = Either a local path to an image or a link to an image
+- RANDOM_AVATARS = If set to `true` then a random image from `assets/avatars` will be selected each time a minawan joins. (For now should be the same res as `avatar.png` 61x46, the most random res)
 - ACTION_DURATION_MILIS = Minimum time and avatar should walk for
 - WAIT_DURATION_MILIS = Minimum an avatar should be still for
 - AVATAR_MOVE_SPEED = How quickly an avatar should move

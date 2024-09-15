@@ -13,7 +13,7 @@ use log::info;
 use rand::Rng;
 
 use crate::{
-    config::Config, AppState, TwitchMessage, UserAction, UserActionDetails, UserBundle, UserDetails, UserMarker
+    config::Config, AdjustScaleOnce, AppState, TwitchMessage, UserAction, UserActionDetails, UserBundle, UserDetails, UserMarker
 };
 
 /// Spawn a new user entity in a random position
@@ -51,13 +51,17 @@ pub(crate) fn spawn_user(
             sprite: SpriteBundle {
                 texture: asset_server.load(&avatar_url),
                 transform: Transform::from_translation(translation),
+                sprite: Sprite {
+                    size: Vec2::new(61.0, 61.0),
+                    ..default()
+                },
                 ..default()
             },
             last_action: UserActionDetails {
                 last_action: UserAction::Stop,
                 time: Instant::now(),
             },
-        })
+        }).insert(AdjustScaleOnce { height: 61.0 })
         .id()
 }
 

@@ -106,6 +106,7 @@ async fn main() {
                 despawn_messages,
                 handle_twitch_messages,
                 handle_window_events,
+                adjust_sprite_scale_system,
             ),
         )
         .run();
@@ -256,6 +257,23 @@ fn handle_window_events(
                     .min(rect.x as f32 / 2.0);
                 transform.translation.y = -(rect.y as f32 / 2.0) + 25.0;
             }
+        }
+    }
+}
+
+fn adjust_sprite_scale_system(
+    mut commands: Commands,
+    mut query: Query<(Entity, &Handle<Image>, &mut Transform), With<AdjustScaleOnce>>,
+    images: Res<Assets<Image>>,
+) {
+    for (entity, texture_handle, mut transform) in query.iter_mut() {
+        if let Some(image) = images.get_mut(texture_handle) {
+            let texture_width = image.texture_descriptor.size.width as f32;
+            let scale_factor = 61.0 / texture_width;
+            transform.scale = Vec3::splat(scale_factor);
+
+            // Remove the marker component
+            commands.entity(entity).remove::<AdjustScaleOnce>();
         }
     }
 }
