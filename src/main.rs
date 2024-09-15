@@ -263,17 +263,20 @@ fn handle_window_events(
 
 fn adjust_sprite_scale_system(
     mut commands: Commands,
-    mut query: Query<(Entity, &Handle<Image>, &mut Transform), With<AdjustScaleOnce>>,
-    images: Res<Assets<Image>>,
+    mut query: Query<(Entity, &Handle<Image>, &mut Sprite, &mut Visibility), With<AdjustScale>>,
+    mut images: ResMut<Assets<Image>>,
 ) {
-    for (entity, texture_handle, mut transform) in query.iter_mut() {
+    for (entity, texture_handle, mut sprite, mut visibility) in query.iter_mut() {
         if let Some(image) = images.get_mut(texture_handle) {
-            let texture_width = image.texture_descriptor.size.width as f32;
-            let scale_factor = 61.0 / texture_width;
-            transform.scale = Vec3::splat(scale_factor);
+            let texture_height = image.texture_descriptor.size.height as f32;
+            let scale_factor = 46.0 / texture_height;
+            
+            // Modify sprite custom size and make visible
+            sprite.custom_size.replace(Vec2::new(image.texture_descriptor.size.width as f32 * scale_factor, texture_height * scale_factor));
+            *visibility = Visibility::Visible;
 
             // Remove the marker component
-            commands.entity(entity).remove::<AdjustScaleOnce>();
+            commands.entity(entity).remove::<AdjustScale>();
         }
     }
 }

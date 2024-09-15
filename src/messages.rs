@@ -1,7 +1,7 @@
 use std::time::Instant;
 
 use bevy::{
-    asset::{AssetServer, Handle}, color::{Alpha, Color}, log::warn, math::{Vec2, Vec3}, prelude::{
+    asset::{AssetServer, Handle}, color::{Alpha, Color}, math::{Vec2, Vec3}, prelude::{
         default, BuildChildren, Commands, DespawnRecursiveExt, Entity, Image, Query, Res, ResMut,
         Transform,
     }, render::texture::{ImageFormatSetting, ImageLoaderSettings}, sprite::{Anchor, Sprite, SpriteBundle}, text::{
