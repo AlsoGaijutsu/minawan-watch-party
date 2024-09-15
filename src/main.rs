@@ -106,6 +106,7 @@ async fn main() {
                 despawn_messages,
                 handle_twitch_messages,
                 handle_window_events,
+                adjust_sprite_scale_system,
             ),
         )
         .run();
@@ -256,6 +257,26 @@ fn handle_window_events(
                     .min(rect.x as f32 / 2.0);
                 transform.translation.y = -(rect.y as f32 / 2.0) + 25.0;
             }
+        }
+    }
+}
+
+fn adjust_sprite_scale_system(
+    mut commands: Commands,
+    mut query: Query<(Entity, &Handle<Image>, &mut Sprite, &mut Visibility), With<AdjustScale>>,
+    mut images: ResMut<Assets<Image>>,
+) {
+    for (entity, texture_handle, mut sprite, mut visibility) in query.iter_mut() {
+        if let Some(image) = images.get_mut(texture_handle) {
+            let texture_height = image.texture_descriptor.size.height as f32;
+            let scale_factor = 46.0 / texture_height;
+            
+            // Modify sprite custom size and make visible
+            sprite.custom_size.replace(Vec2::new(image.texture_descriptor.size.width as f32 * scale_factor, texture_height * scale_factor));
+            *visibility = Visibility::Visible;
+
+            // Remove the marker component
+            commands.entity(entity).remove::<AdjustScale>();
         }
     }
 }

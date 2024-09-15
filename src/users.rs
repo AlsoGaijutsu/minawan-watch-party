@@ -2,9 +2,9 @@ use std::time::Instant;
 
 use bevy::{
     asset::AssetServer,
-    math::{Rect, Vec2, Vec3},
+    math::{Rect, Vec3},
     prelude::{
-        default, Camera, Commands, DespawnRecursiveExt, Entity, Query, Res, ResMut, Transform, With,
+        default, Camera, Commands, DespawnRecursiveExt, Entity, Query, Res, ResMut, Transform, Visibility, With
     },
     sprite::{Sprite, SpriteBundle},
     time::Time,
@@ -13,7 +13,7 @@ use log::info;
 use rand::Rng;
 
 use crate::{
-    config::Config, AppState, TwitchMessage, UserAction, UserActionDetails, UserBundle, UserDetails, UserMarker
+    config::Config, AdjustScale, AppState, TwitchMessage, UserAction, UserActionDetails, UserBundle, UserDetails, UserMarker
 };
 
 /// Spawn a new user entity in a random position
@@ -51,13 +51,14 @@ pub(crate) fn spawn_user(
             sprite: SpriteBundle {
                 texture: asset_server.load(&avatar_url),
                 transform: Transform::from_translation(translation),
+                visibility: Visibility::Hidden,
                 ..default()
             },
             last_action: UserActionDetails {
                 last_action: UserAction::Stop,
                 time: Instant::now(),
             },
-        })
+        }).insert(AdjustScale{})
         .id()
 }
 

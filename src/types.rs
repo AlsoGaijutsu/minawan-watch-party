@@ -1,13 +1,15 @@
 use std::time::Instant;
 
 use bevy::{
-    prelude::{Bundle, Component, Entity, Resource},
-    sprite::SpriteBundle,
-    utils::HashMap,
+    prelude::{Bundle, Component, Entity, Resource}, sprite::SpriteBundle, utils::HashMap
 };
 use tokio::sync::mpsc;
 
-use crate::emotes::emote_types::{Emote, LoadedEmote};
+use crate::emotes::emote_types::{Emote, EmoteHandles};
+
+/// Marker component to identify avatars that need their scale adjusted
+#[derive(Component, Default)]
+pub(crate) struct AdjustScale {}
 
 /// Twitch message struct
 pub(crate) struct TwitchMessage {
@@ -26,7 +28,7 @@ pub(crate) struct TwitchReceiver {
 #[derive(Resource)]
 pub(crate) struct EmoteStorage {
     pub(crate) all: HashMap<String, Emote>,
-    pub(crate) loaded: HashMap<String, LoadedEmote>,
+    pub(crate) loaded: HashMap<String, EmoteHandles>,
 }
 
 /// App State struct stored as a Resource

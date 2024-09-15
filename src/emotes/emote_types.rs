@@ -8,17 +8,9 @@ pub(crate) struct EmoteMeta {
     pub(crate) format: bevy::render::texture::ImageFormat,
 }
 
-pub(crate) struct LoadedEmote {
-    pub(crate) name: String,
-    pub(crate) animated: bool,
+pub(crate) struct EmoteHandles {
     pub(crate) animated_image: Option<Handle<AnimatedImage>>,
     pub(crate) static_image: Option<Handle<Image>>,
-}
-
-#[derive(Debug, Clone)]
-enum EmoteSource {
-    SevenTV,
-    Twitch,
 }
 
 #[derive(Debug, Clone)]
@@ -27,26 +19,21 @@ pub(crate) struct Emote {
     pub(crate) name: String,
     pub(crate) animated: bool,
     pub(crate) emote_url: String,
-    pub(crate) source: EmoteSource,
     pub(crate) format: Option<ImageFormat>,
     pub(crate) width: Option<u32>,
     pub(crate) height: Option<u32>,
 }
 
 impl Emote {
-    pub(crate) fn add_animated(&self, handle: Handle<AnimatedImage>) -> LoadedEmote {
-        LoadedEmote {
-            name: self.name.clone(),
-            animated: self.animated,
+    pub(crate) fn add_animated(&self, handle: Handle<AnimatedImage>) -> EmoteHandles {
+        EmoteHandles {
             animated_image: Some(handle),
             static_image: None,
         }
     }
 
-    pub(crate) fn add_static(&self, handle: Handle<Image>) -> LoadedEmote {
-        LoadedEmote {
-            name: self.name.clone(),
-            animated: self.animated,
+    pub(crate) fn add_static(&self, handle: Handle<Image>) -> EmoteHandles {
+        EmoteHandles {
             animated_image: None,
             static_image: Some(handle),
         }
@@ -63,7 +50,6 @@ impl From<twitch_irc::message::Emote> for Emote {
                 "https://static-cdn.jtvnw.net/emoticons/v2/{}/default/light/4.0",
                 emote.id
             ),
-            source: EmoteSource::Twitch,
             format: None,
             width: None,
             height: None,
@@ -86,7 +72,6 @@ impl From<RawSevenTVEmote> for Emote {
                 name: raw_emote.name,
                 animated: raw_emote.animated,
                 emote_url: url,
-                source: EmoteSource::SevenTV,
                 format: Some(ImageFormat::WebP),
                 width: Some(file.width),
                 height: Some(file.height),
@@ -100,7 +85,6 @@ impl From<RawSevenTVEmote> for Emote {
                 emote_url: String::from(
                     "https://cdn.7tv.app/emote/63384017cf7eb48c4e731a79/4x.webp",
                 ),
-                source: EmoteSource::SevenTV,
                 format: Some(ImageFormat::WebP),
                 width: Some(128),
                 height: Some(128),
