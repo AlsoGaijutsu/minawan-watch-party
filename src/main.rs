@@ -244,10 +244,10 @@ fn window_moved_system(
 }
 
 fn handle_window_events(
-    mut window_moved_events: EventReader<WindowMoved>,
-    mut window_resized_events: EventReader<WindowResized>,
-    mut window_focused_events: EventReader<WindowFocused>,
-    mut windows: Query<&mut Window>,
+    window_moved_events: EventReader<WindowMoved>,
+    window_resized_events: EventReader<WindowResized>,
+    window_focused_events: EventReader<WindowFocused>,
+    windows: Query<&mut Window>,
     mut avatar_query: Query<&mut Transform, With<UserMarker>>,
 ) {
     // Check if any relevant window events have occurred
